@@ -54,7 +54,7 @@ docker-compose up --build
 #### Pour la production sur Hostinger :
 ```bash
 # Construire et démarrer les services
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up --build -d
 
 # Vérifier que les conteneurs tournent
 docker-compose -f docker-compose.prod.yml ps
