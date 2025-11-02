@@ -72,7 +72,7 @@ docker-compose down
 # Créer un dump des données
 
 # Démarrer avec PostgreSQL
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up --build -d
 
 # Appliquer les migrations
 docker-compose -f docker-compose.prod.yml exec django python manage.py migrate
