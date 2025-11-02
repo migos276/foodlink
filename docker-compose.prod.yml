@@ -61,8 +61,9 @@ services:
       - camer_eat_network
     depends_on:
       - django
-    ports:
-      - "3000:3000"
+    # Remove external port exposure for Nginx proxy
+    # ports:
+    #   - "3000:3000"
 
 volumes:
   postgres_data:

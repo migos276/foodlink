@@ -3,7 +3,7 @@
 ## Prérequis
 
 - Docker et Docker Compose installés sur le VPS Hostinger
-- Apache2 installé sur le serveur
+- Nginx installé sur le serveur
 - Domaine configuré (foodlink237.org)
 - Certificats SSL (Let's Encrypt recommandé)
 
@@ -23,25 +23,25 @@ cp .env.example .env
 - Configurez `ALLOWED_HOSTS` avec votre domaine
 - Définissez un mot de passe sécurisé pour PostgreSQL
 
-### 2. Configuration Apache pour Hostinger
+### 2. Configuration Nginx pour Hostinger
 
-Sur votre VPS Hostinger, copiez la configuration Apache :
+Sur votre VPS Hostinger, copiez la configuration Nginx :
 
 ```bash
 # Copier la configuration
-sudo cp apache.conf /etc/apache2/sites-available/foodlink237.conf
+sudo cp nginx.conf /etc/nginx/sites-available/foodlink237
 
-# Activer le site
-sudo a2ensite foodlink237.conf
+# Créer un lien symbolique vers sites-enabled
+sudo ln -s /etc/nginx/sites-available/foodlink237 /etc/nginx/sites-enabled/
 
-# Activer les modules nécessaires
-sudo a2enmod proxy proxy_http rewrite ssl
+# Supprimer la configuration par défaut
+sudo rm /etc/nginx/sites-enabled/default
 
-# Désactiver le site par défaut si nécessaire
-sudo a2dissite 000-default.conf
+# Tester la configuration
+sudo nginx -t
 
-# Redémarrer Apache
-sudo systemctl reload apache2
+# Redémarrer Nginx
+sudo systemctl reload nginx
 ```
 
 ### 3. Déploiement avec Docker
@@ -127,7 +127,7 @@ docker-compose -f docker-compose.prod.yml up --build -d
 ## Sécurité
 
 - Changez les mots de passe par défaut
-- Utilisez HTTPS en production (SSL configuré dans apache.conf)
+- Utilisez HTTPS en production (SSL configuré dans nginx.conf)
 - Configurez un firewall (ufw sur Ubuntu)
 - Mettez à jour régulièrement les images Docker
 - Utilisez des secrets pour les variables sensibles
@@ -136,17 +136,17 @@ docker-compose -f docker-compose.prod.yml up --build -d
 ## Configuration SSL avec Let's Encrypt (Hostinger)
 
 ```bash
-# Installer Certbot
-sudo apt install certbot python3-certbot-apache
+# Installer Certbot pour Nginx
+sudo apt install certbot python3-certbot-nginx
 
 # Obtenir le certificat
-sudo certbot --apache -d foodlink237.org -d www.foodlink237.org
+sudo certbot --nginx -d foodlink237.org -d www.foodlink237.org
 
-# Le certificat sera automatiquement configuré dans Apache
-# Les chemins dans apache.conf seront mis à jour automatiquement
+# Le certificat sera automatiquement configuré dans Nginx
+# Les chemins dans nginx.conf seront mis à jour automatiquement
 ```
 
-## Commandes de déploiement finales pour Hostinger
+## Commandes de déploiement finales pour Hostinger (Nginx)
 
 ```bash
 # 1. Cloner le projet
@@ -157,21 +157,30 @@ cd camer-eat-main
 cp .env.example .env
 # Éditez .env avec vos vraies valeurs
 
-# 3. Construire et démarrer
+# 3. Construire et démarrer les services Docker
 docker-compose -f docker-compose.prod.yml up --build -d
 
-# 4. Configurer Apache
-sudo cp apache.conf /etc/apache2/sites-available/foodlink237.conf
-sudo a2ensite foodlink237.conf
-sudo a2enmod proxy proxy_http rewrite ssl
-sudo a2dissite 000-default.conf
-sudo systemctl reload apache2
+# 4. Vérifier que les conteneurs tournent
+docker-compose -f docker-compose.prod.yml ps
 
-# 5. Configurer SSL
-sudo certbot --apache -d foodlink237.org -d www.foodlink237.org
+# 5. Configurer Nginx
+sudo cp nginx.conf /etc/nginx/sites-available/foodlink237
+sudo ln -s /etc/nginx/sites-available/foodlink237 /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
 
-# 6. Vérifier
+# 6. Configurer SSL avec Let's Encrypt
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d foodlink237.org -d www.foodlink237.org
+
+# 7. Vérifier le déploiement
 curl https://foodlink237.org
+curl https://foodlink237.org/api/
+
+# 8. Configurer le firewall (optionnel mais recommandé)
+sudo ufw allow 'Nginx Full'
+sudo ufw --force enable
 ```
 
 ## Dépannage
@@ -180,7 +189,13 @@ curl https://foodlink237.org
 Vérifiez les variables d'environnement et que le conteneur PostgreSQL est démarré.
 
 ### Erreur 502 Bad Gateway :
-Vérifiez que les services Django et Next.js sont accessibles sur leurs ports respectifs.
+Vérifiez que les services Django et Next.js sont accessibles sur leurs ports respectifs (3000 et 8000).
+
+### Erreur 504 Gateway Timeout :
+Augmentez les timeouts dans nginx.conf si nécessaire.
 
 ### Problème de permissions :
 Assurez-vous que les volumes Docker ont les bonnes permissions.
+
+### SSL ne fonctionne pas :
+Vérifiez que les certificats Let's Encrypt ont été générés correctement avec `sudo certbot certificates`.
