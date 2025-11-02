@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: camer_eat
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - camer_eat_network
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    restart: always
+    environment:
+      - DB_NAME=camer_eat
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-production-key-change-this
+    volumes:
+      - ./livraison_nourriture:/app
+      - static_files:/app/static
+      - media_files:/app/media
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    networks:
+      - camer_eat_network
+    command: >
+      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=http://django:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - camer_eat_network
+    depends_on:
+      - django
+
+volumes:
+  postgres_data:
+  static_files:
+  media_files:
+
+networks:
+  camer_eat_network:
+    driver: bridge
