@@ -28,12 +28,12 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)w-eva^2jmzscs_1zn$_trulk-8ous9^s(6-khtc8b10eae-$0'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-)w-eva^2jmzscs_1zn$_trulk-8ous9^s(6-khtc8b10eae-$0')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'foodlink237.org,www.foodlink237.org,localhost,127.0.0.1').split(',')
 
 # Application definition
 
@@ -194,10 +194,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configuration CORS
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,https://foodlink237.org,https://www.foodlink237.org').split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -214,7 +211,4 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Si vous avez des problèmes CSRF avec l'API
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,https://foodlink237.org,https://www.foodlink237.org').split(',')

@@ -2,9 +2,10 @@
 
 ## Prérequis
 
-- Docker et Docker Compose installés
-- Apache installé sur le serveur
-- Domaine configuré (optionnel mais recommandé)
+- Docker et Docker Compose installés sur le VPS Hostinger
+- Apache2 installé sur le serveur
+- Domaine configuré (foodlink237.org)
+- Certificats SSL (Let's Encrypt recommandé)
 
 ## Configuration pour la Production
 
@@ -22,14 +23,24 @@ cp .env.example .env
 - Configurez `ALLOWED_HOSTS` avec votre domaine
 - Définissez un mot de passe sécurisé pour PostgreSQL
 
-### 2. Configuration Apache
+### 2. Configuration Apache pour Hostinger
 
-Copiez `apache.conf` vers votre configuration Apache :
+Sur votre VPS Hostinger, copiez la configuration Apache :
 
 ```bash
-sudo cp apache.conf /etc/apache2/sites-available/camer_eat.conf
-sudo a2ensite camer_eat.conf
-sudo a2enmod proxy proxy_http rewrite
+# Copier la configuration
+sudo cp apache.conf /etc/apache2/sites-available/foodlink237.conf
+
+# Activer le site
+sudo a2ensite foodlink237.conf
+
+# Activer les modules nécessaires
+sudo a2enmod proxy proxy_http rewrite ssl
+
+# Désactiver le site par défaut si nécessaire
+sudo a2dissite 000-default.conf
+
+# Redémarrer Apache
 sudo systemctl reload apache2
 ```
 
@@ -40,9 +51,13 @@ sudo systemctl reload apache2
 docker-compose up --build
 ```
 
-#### Pour la production :
+#### Pour la production sur Hostinger :
 ```bash
+# Construire et démarrer les services
 docker-compose -f docker-compose.prod.yml up --build -d
+
+# Vérifier que les conteneurs tournent
+docker-compose -f docker-compose.prod.yml ps
 ```
 
 ### 4. Migration de la base de données
@@ -112,10 +127,52 @@ docker-compose -f docker-compose.prod.yml up --build -d
 ## Sécurité
 
 - Changez les mots de passe par défaut
-- Utilisez HTTPS en production
-- Configurez un firewall
+- Utilisez HTTPS en production (SSL configuré dans apache.conf)
+- Configurez un firewall (ufw sur Ubuntu)
 - Mettez à jour régulièrement les images Docker
 - Utilisez des secrets pour les variables sensibles
+- Installez Let's Encrypt pour les certificats SSL gratuits
+
+## Configuration SSL avec Let's Encrypt (Hostinger)
+
+```bash
+# Installer Certbot
+sudo apt install certbot python3-certbot-apache
+
+# Obtenir le certificat
+sudo certbot --apache -d foodlink237.org -d www.foodlink237.org
+
+# Le certificat sera automatiquement configuré dans Apache
+# Les chemins dans apache.conf seront mis à jour automatiquement
+```
+
+## Commandes de déploiement finales pour Hostinger
+
+```bash
+# 1. Cloner le projet
+git clone <your-repo-url>
+cd camer-eat-main
+
+# 2. Créer le fichier .env avec vos variables de production
+cp .env.example .env
+# Éditez .env avec vos vraies valeurs
+
+# 3. Construire et démarrer
+docker-compose -f docker-compose.prod.yml up --build -d
+
+# 4. Configurer Apache
+sudo cp apache.conf /etc/apache2/sites-available/foodlink237.conf
+sudo a2ensite foodlink237.conf
+sudo a2enmod proxy proxy_http rewrite ssl
+sudo a2dissite 000-default.conf
+sudo systemctl reload apache2
+
+# 5. Configurer SSL
+sudo certbot --apache -d foodlink237.org -d www.foodlink237.org
+
+# 6. Vérifier
+curl https://foodlink237.org
+```
 
 ## Dépannage
 
