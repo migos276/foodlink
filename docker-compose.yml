@@ -1,15 +1,15 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_DB: camer_eat
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - camer_eat_network
 
@@ -19,25 +19,31 @@ services:
       dockerfile: Dockerfile.django
     restart: always
     environment:
-      - DB_NAME=camer_eat
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
       - DB_PORT=5432
-      - DEBUG=True
-      - SECRET_KEY=django-insecure-production-key-change-this
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - cloud_name=${cloud_name}
+      - api_key=${api_key}
+      - api_secret=${api_secret}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
+      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST}
     volumes:
       - ./livraison_nourriture:/app
       - static_files:/app/static
       - media_files:/app/media
     depends_on:
       - db
-    ports:
-      - "8000:8000"
     networks:
       - camer_eat_network
     command: >
-      sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py collectstatic --noinput && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
   nextjs:
     build:
@@ -46,8 +52,6 @@ services:
     restart: always
     environment:
       - NEXT_PUBLIC_API_URL=http://django:8000
-    ports:
-      - "3000:3000"
     networks:
       - camer_eat_network
     depends_on:
