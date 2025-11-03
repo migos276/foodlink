@@ -60,7 +60,7 @@ function LoginForm() {
               </svg>
             </div>
           </motion.div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Camer Eat</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">FoodLinK</h1>
           <p className="text-muted-foreground">Connectez-vous à votre compte administrateur</p>
         </div>
 

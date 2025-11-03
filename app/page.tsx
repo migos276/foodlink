@@ -66,7 +66,7 @@ export default function SplashScreen() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
           >
-            Camer Eat
+            FoodLink
           </motion.h1>
 
           <motion.p

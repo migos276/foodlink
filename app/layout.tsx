@@ -9,7 +9,7 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Camer Eat - Admin Dashboard",
+  title: "FoodLinK - Admin Dashboard",
   description: "Tableau de bord administrateur pour la gestion de la plateforme de livraison",
   generator: "v0.app",
 }

@@ -64,7 +64,7 @@ export default function DashboardLayout({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <span className="text-lg font-bold text-sidebar-foreground">Camer Eat</span>
+                <span className="text-lg font-bold text-sidebar-foreground">FoodLinK</span>
               </div>
               <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
                 <X className="h-5 w-5" />
