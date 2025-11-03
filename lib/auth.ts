@@ -28,10 +28,18 @@ export const useAuth = create<AuthState>()(
       isAuthenticated: false,
       user: null,
       token: null,
-      
+
       login: async (username: string, password: string) => {
         try {
-          const response = await fetch("http://127.0.0.1:8000/api/token/", {
+          // Essayer d'abord avec localhost pour le développement
+          let apiUrl = "http://127.0.0.1:8000/api/token/"
+
+          // Si on est en production, utiliser l'URL de production
+          if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+            apiUrl = "/api/token/"
+          }
+
+          const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
