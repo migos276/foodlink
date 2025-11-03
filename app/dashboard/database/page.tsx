@@ -100,7 +100,11 @@ export default function DatabasePage() {
       for (const entity of entities) {
         try {
           const endpoint = entityMappings[entity.id as keyof typeof entityMappings]
-          const response = await fetch(`http://127.0.0.1:8000/${endpoint}/`, {
+          const apiUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+            ? `/${endpoint}/`
+            : `http://127.0.0.1:8000/${endpoint}/`
+
+          const response = await fetch(apiUrl, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state.token : ''}`
