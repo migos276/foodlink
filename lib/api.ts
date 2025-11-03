@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://127.0.0.1:8000"
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? '' // URL relative pour la production (sera résolue par Nginx)
+  : "http://127.0.0.1:8000"
 
 export interface ApiResponse<T = any> {
   data?: T
