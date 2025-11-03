@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:latest
     restart: always
     environment:
-      POSTGRES_DB: 
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
@@ -14,16 +12,29 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   django:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.django
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/app
+      - ./livraison_nourriture:/app
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
       - db
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile.nextjs
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - django
 
 volumes:
   postgres_data:

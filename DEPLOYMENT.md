@@ -158,7 +158,7 @@ cp .env.example .env
 # Éditez .env avec vos vraies valeurs
 
 # 3. Construire et démarrer les services Docker
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up --build -d
 
 # 4. Vérifier que les conteneurs tournent
 docker-compose -f docker-compose.prod.yml ps
