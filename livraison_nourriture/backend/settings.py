@@ -197,6 +197,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Configuration CORS
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,https://foodlink237.org,https://www.foodlink237.org').split(',')
 
+# Allow all origins for development (be careful in production)
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False').lower() == 'true'
+
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
