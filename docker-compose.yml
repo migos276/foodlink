@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:latest
+    image: postgres:15
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -14,8 +12,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   django:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    command: python livraison_nourriture/manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
