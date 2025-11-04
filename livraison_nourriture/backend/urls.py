@@ -57,7 +57,7 @@ routeur.register(r'horaire',HoraireViewset)
 routeur.register(r'horaire_hebdomadaire',HoraireHebdoViewset)
 
 urlpatterns = [
-    path('', include(routeur.urls)),
+    path('api/', include(routeur.urls)),
     path('admin/', admin.site.urls),
     path('today/', CurrentMenuView.as_view(),name="menu-current"),
     path("api/token/",CustomTokenObtainPairView.as_view(),name="token_obtain_pair"),
@@ -75,6 +75,6 @@ urlpatterns = [
     path("menu/<int:id>/clear/",ClearMenuView.as_view(),name="vider-le-menu"),
     path('types-plats/', TypePlatListView.as_view(), name='types_plats'),
     path("menu_statique/<int:id>/clear/", ClearMenuStatiqueView.as_view(), name="vider-le-menu-statique"),
-    path('analysis/', AnalysisView.as_view(), name='analysis')
+    path('api/analysis/', AnalysisView.as_view(), name='analysis')
 
 ]
