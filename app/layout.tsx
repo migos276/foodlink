@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
 import SplashScreen from "@/components/SplashScreen"
 import "./globals.css"
 
@@ -25,7 +24,6 @@ export default function RootLayout({
         <SplashScreen>
           {children}
         </SplashScreen>
-        <Analytics />
       </body>
     </html>
   )
