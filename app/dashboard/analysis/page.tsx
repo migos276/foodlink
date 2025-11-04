@@ -64,6 +64,9 @@ export default function AnalysisPage() {
   }
 
   return (
+    <div className="space-y-4 md:space-y-6 px-2 md:px-0">
+      <div>
+  return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Analyse</h1>
