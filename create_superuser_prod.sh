@@ -6,9 +6,9 @@
 echo "Création d'un super utilisateur et de données d'exemple en production..."
 
 # Variables du super utilisateur
-SUPER_USERNAME="Fotso"
+SUPER_USERNAME="fotso"
 SUPER_EMAIL="admin@foodlink237.org"
-SUPER_PASSWORD="admin123"
+SUPER_PASSWORD="00258m24"
 SUPER_TEL="123456789"
 SUPER_PROFILE="entreprise"
 
@@ -49,9 +49,9 @@ print('=== CRÉATION DES UTILISATEURS D\'EXEMPLE ===')
 
 # Créer des utilisateurs entreprise pour les restaurants et boutiques
 entreprises_data = [
-    {'username': 'resto1', 'email': 'resto1@example.com', 'tel': 111111111, 'quartier': 'Centre-ville'},
-    {'username': 'resto2', 'email': 'resto2@example.com', 'tel': 222222222, 'quartier': 'Plateau'},
-    {'username': 'boutique1', 'email': 'boutique1@example.com', 'tel': 333333333, 'quartier': 'Bonapriso'},
+    {'username': 'resto3', 'email': 'resto1@example.com', 'tel': 111111111, 'quartier': 'Centre-ville'},
+    {'username': 'resto4', 'email': 'resto2@example.com', 'tel': 222222222, 'quartier': 'Plateau'},
+    {'username': 'boutique2', 'email': 'boutique1@example.com', 'tel': 333333333, 'quartier': 'Bonapriso'},
 ]
 
 entreprises = []
@@ -116,8 +116,8 @@ print('=== CRÉATION DES LIVREURS ===')
 
 # Créer des utilisateurs livreur
 livreurs_data = [
-    {'username': 'livreur1', 'email': 'livreur1@example.com', 'tel': 444444444, 'matricule': 'LIV001', 'entreprise': entreprises[0]},
-    {'username': 'livreur2', 'email': 'livreur2@example.com', 'tel': 555555555, 'matricule': 'LIV002', 'entreprise': entreprises[1]},
+    {'username': 'livreur3', 'email': 'livreur1@example.com', 'tel': 444444444, 'matricule': 'LIV001', 'entreprise': entreprises[0]},
+    {'username': 'livreur4', 'email': 'livreur2@example.com', 'tel': 555555555, 'matricule': 'LIV002', 'entreprise': entreprises[1]},
 ]
 
 for data in livreurs_data:
@@ -159,8 +159,8 @@ print('')
 print('=== CRÉATION DES CLIENTS ===')
 
 clients_data = [
-    {'username': 'client1', 'email': 'client1@example.com', 'tel': 666666666, 'quartier': 'Akwa'},
-    {'username': 'client2', 'email': 'client2@example.com', 'tel': 777777777, 'quartier': 'Deido'},
+    {'username': 'client3', 'email': 'client1@example.com', 'tel': 666666666, 'quartier': 'Akwa'},
+    {'username': 'client4', 'email': 'client2@example.com', 'tel': 777777777, 'quartier': 'Deido'},
 ]
 
 for data in clients_data:
