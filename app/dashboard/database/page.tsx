@@ -159,6 +159,43 @@ export default function DatabasePage() {
     }
   })
 
+  // Fonction pour recharger les compteurs
+  const loadEntityCounts = async () => {
+    const counts: {[key: string]: number} = {}
+    const entityMappings = {
+      users: 'utilisateur',
+      restaurants: 'restaurant',
+      boutiques: 'boutique',
+      livreurs: 'livreur'
+    }
+
+    for (const entity of entities) {
+      try {
+        const endpoint = entityMappings[entity.id as keyof typeof entityMappings]
+        const apiUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+          ? `/${endpoint}/`
+          : `http://127.0.0.1:8000/${endpoint}/`
+
+        const response = await fetch(apiUrl, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state.token : ''}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          counts[entity.id] = Array.isArray(data) ? data.length : data.count || 0
+        } else {
+          counts[entity.id] = 0
+        }
+      } catch (error) {
+        console.error(`Erreur lors du chargement des ${entity.id}:`, error)
+        counts[entity.id] = 0
+      }
+    }
+    setEntityCounts(counts)
+  }
+
   // Création d'une entité
   const handleAddEntity = async () => {
     setIsSubmitting(true)
@@ -171,6 +208,8 @@ export default function DatabasePage() {
         })
         setIsAddModalOpen(false)
         setFormData({})
+        // Recharger les compteurs après création
+        await loadEntityCounts()
       } else {
         toast({
           title: "Erreur",
@@ -203,6 +242,8 @@ export default function DatabasePage() {
         setIsEditModalOpen(false)
         setEditingEntity(null)
         setFormData({})
+        // Recharger les compteurs après modification
+        await loadEntityCounts()
       } else {
         toast({
           title: "Erreur",
@@ -778,6 +819,8 @@ export default function DatabasePage() {
                                         title: "Suppression réussie",
                                         description: "L'élément a été supprimé avec succès.",
                                       })
+                                      // Recharger les compteurs après suppression
+                                      await loadEntityCounts()
                                     } else {
                                       toast({
                                         title: "Erreur",
