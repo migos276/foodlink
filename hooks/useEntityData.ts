@@ -13,6 +13,10 @@ interface EntityData {
   quartier?: string
   status?: string
   username?: string
+  matricule?: string
+  description?: string
+  entreprise?: any
+  couleur?: string
 }
 
 interface UseEntityDataReturn {
