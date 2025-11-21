@@ -18,7 +18,7 @@ class CustomUser(AbstractUser):
     ]
     tel=models.IntegerField()
     profile= models.CharField(max_length=15, choices=profils_list,default="client")
-    username=models.CharField(max_length=100,blank=True,default="",unique=True)
+    username=models.CharField(max_length=100,blank=True,default="")
     email=models.EmailField(unique=True,max_length=190)
     code=models.CharField(max_length=10,blank=True,default="")
     a_restaurant=models.BooleanField(default=False)
@@ -26,8 +26,8 @@ class CustomUser(AbstractUser):
     logo = CloudinaryField("image", blank=True, null=True, default='')
     quartier = models.CharField(max_length=100,default="",blank=True)
 
-    USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ["email", "tel"]
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
 
 class HoraireHebdomadaire(models.Model):
     pass
@@ -61,6 +61,7 @@ class Restaurant(models.Model):
 class Boutique(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="boutique")
     est_ouvert = models.BooleanField(default=False)
+    type=models.CharField(max_length=50,default="supermarché")
     couleur=models.CharField(max_length=10,default="#ffffff")
     rate = models.FloatField(default=0.0)
     rating_count = models.FloatField(default=0.0)
@@ -83,3 +84,5 @@ class Livreur(models.Model):
     rate = models.FloatField(default=0.0)
     rating_count = models.FloatField(default=0.0)
     rating_sum = models.FloatField(default=0.0)
+
+

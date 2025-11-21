@@ -1,14 +1,15 @@
 from django.shortcuts import render
-
+from rest_framework.decorators import action
 from rest_framework import viewsets,filters,status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework_simplejwt.views import TokenObtainPairView
 from users.models import Restaurant, Livreur, CustomUser, Boutique, HoraireHebdomadaire, Horaire
 from users.serializer import RestaurantSerializer, LivreurSerializer, CustomUserSerializer, BoutiqueSerializer, \
-    HoraireHebdoSerializer, HoraireSerializer, TypePlatSerializer
+    HoraireHebdoSerializer, HoraireSerializer, TypePlatSerializer, MyTokenObtainPairSerializer, CreateLivreurSerializer, \
+    TypeBoutiqueSerializer
 from users.utils import get_unique_code_for_model
 
 
@@ -22,13 +23,33 @@ def get_tokens_for_user(user):
         'refresh':str(refresh),
         'access':str(access),
     }
-
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 class UserViewset(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['profile', 'email',"code"]
 
+    @action(detail=False, methods=['post'], url_path='new_entreprise')
+    def create_entreprise(self, request):
+        serializer = CustomUserSerializer(data=request.data)
+        if serializer.is_valid():
+            code = get_unique_code_for_model(CustomUser)
+            entreprise = serializer.save(profile="entreprise", password=code, code=code)
+            return Response(CustomUserSerializer(entreprise).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], url_path='new_livreur')
+    def create_livreur(self, request):
+
+        serializer = CreateLivreurSerializer(data=request.data)
+        data=serializer.data
+        return Response(data,status=status.HTTP_201_CREATED)
+    def get_serializer_class(self):
+        if self.action=="create_livreur":
+            return CreateLivreurSerializer
+        else:
+            return CustomUserSerializer
 
 class RestaurantViewset(viewsets.ModelViewSet):
     queryset = Restaurant.objects.all()
@@ -62,7 +83,7 @@ class BoutiqueViewset(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
 
     search_fields = ['user__username',"user__quartier",'user__email']
-    filterset_fields = ["est_ouvert","user"]
+    filterset_fields = ["est_ouvert","user","type","user__quartier"]
 
 class LivreurViewset(viewsets.ModelViewSet):
     queryset = Livreur.objects.all()
@@ -73,7 +94,7 @@ class LivreurViewset(viewsets.ModelViewSet):
 
 
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from services.supabase_service import sync_table
 
 @api_view(["POST"])
@@ -91,19 +112,30 @@ def update_position(request):
     })
 
     return Response({"status": "ok"})
+class CreateEntrepriseView(APIView):
+    def get(self, request):
+        # Pour afficher les champs dans l'interface DRF
+        serializer = CustomUserSerializer()
+        return Response(serializer.data)
 
-@api_view(['POST'])
-def create_entreprise(request):
-    username = request.data.get("username")
-    email = request.data.get("email")
-    tel = request.data.get("tel")
-    quartier = request.data.get("quartier")
-    profile="entreprise"
-    code=get_unique_code_for_model(CustomUser)
+    def post(self, request):
+        serializer = CustomUserSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            code = get_unique_code_for_model(CustomUser)
 
-    entreprise=CustomUser.objects.create_user(username=username,email=email,tel=tel,quartier=quartier,profile=profile,password=code,code=code)
+            entreprise = CustomUser.objects.create_user(
+                username=data['username'],
+                email=data['email'],
+                tel=data['tel'],
+                quartier=data['quartier'],
+                profile="entreprise",
+                password=code,
+                code=code
+            )
+            return Response(CustomUserSerializer(entreprise).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({"entreprise": entreprise}, status=200)
 
 class HoraireHebdoViewset(viewsets.ModelViewSet):
     queryset = HoraireHebdomadaire.objects.all()
@@ -126,4 +158,19 @@ class TypePlatListView(APIView):
         data = [{'type_plat': t} for t in types]
 
         serializer = TypePlatSerializer(data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class TypeBoutiqueListView(APIView):
+    """
+    Vue pour retourner tous les types de plats uniques
+    """
+
+    def get(self, request, *args, **kwargs):
+        # On récupère tous les types de plats distincts
+        types = Boutique.objects.values_list('type', flat=True).distinct()
+
+        # On transforme en liste de dictionnaires pour serializer
+        data = [{'type': t} for t in types]
+
+        serializer = TypeBoutiqueSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

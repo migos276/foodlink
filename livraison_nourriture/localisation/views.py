@@ -1,182 +1,58 @@
-from django.shortcuts import render
+from datetime import date
+
+from django.db.models import Count,Sum
+from django.shortcuts import render, get_object_or_404
 # Create your views here.
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.utils import timezone
-from django.db.models import Count, Avg, Sum, Q
 from rest_framework import viewsets,filters,status
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError, NotAcceptable, PermissionDenied
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from e_commerce.models import Restaurant_Plat
 from shop.models import Produit
-from users.models import CustomUser, Restaurant, Livreur, Boutique
-from .models import Livraison, CommandeRestaurant, Commande_Plat
-from .serializer import CommandeSerializer, LivraisonSerializer, CommandePlatSerializer
+from users.models import CustomUser, Restaurant, Livreur
+from .models import Livraison, CommandeRestaurant, Commande_Plat, CommandeBoutique, Commande_Produit, LivraisonBoutique, \
+    Position
+from .serializer import CommandeSerializer, CommandePlatSerializer, CommandeBoutiqueSerializer, \
+    CommandeProduitSerializer, LivraisonRestauSerializer, LivraisonBoutiqueSerializer, PositionSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models.functions import TruncDate
+from django.db.models import F
+from django.utils.dateparse import parse_date
 
 
-class AnalysisView(APIView):
-    """
-    Vue pour récupérer les données d'analyse du dashboard
-    """
-    def get(self, request):
-        today = timezone.now().date()
-        now = timezone.now()
-
-        # Commandes d'aujourd'hui
-        orders_today = CommandeRestaurant.objects.filter(
-            jour=today.day,
-            mois=today.month,
-            annee=today.year
-        )
-
-        # Commandes en attente > 1h
-        one_hour_ago = now - timedelta(hours=1)
-        pending_orders_over_1h = CommandeRestaurant.objects.filter(
-            statut='attente',
-            heure_de_commande__lt=one_hour_ago
-        )
-
-        # Temps moyen de préparation (simplifié)
-        avg_prep_time_display = "23 min"
-
-        # Commandes livrées à temps (simplifié - toutes les livrées sont considérées à temps)
-        delivered_orders = CommandeRestaurant.objects.filter(statut='réçu').count()
-        total_orders = CommandeRestaurant.objects.count()
-        on_time_delivery_rate = (delivered_orders / total_orders * 100) if total_orders > 0 else 0
-
-        # Revenus du jour
-        revenue_today = sum(order.prix_total for order in orders_today) or 0
-
-        # Commissions (estimé à 10%)
-        commissions = revenue_today * 0.1
-
-        # Panier moyen
-        avg_basket = revenue_today / orders_today.count() if orders_today.count() > 0 else 0
-
-        # Alertes
-        alerts = []
-
-        # Commande en attente >1h30
-        one_hour_thirty_ago = now - timedelta(hours=1, minutes=30)
-        old_pending_orders = CommandeRestaurant.objects.filter(
-            statut='attente',
-            heure_de_commande__lt=one_hour_thirty_ago
-        )
-        for order in old_pending_orders[:1]:  # Limiter à 1 alerte
-            alerts.append({
-                'id': f'order_{order.id}',
-                'type': 'error',
-                'message': f'Commande #{order.id} en attente depuis plus de 1h30',
-                'time': 'Il y a quelques minutes'
-            })
-
-        # Restaurants qui ne répondent pas (simplifié - restaurants fermés)
-        unresponsive_restaurants = Restaurant.objects.filter(est_ouvert=False)
-        for restaurant in unresponsive_restaurants[:1]:  # Limiter à 1 alerte
-            alerts.append({
-                'id': f'restaurant_{restaurant.id}',
-                'type': 'warning',
-                'message': f'Restaurant "{restaurant.user.username}" ne répond pas',
-                'time': 'Il y a quelques minutes'
-            })
-
-        # Livreurs non connectés (simplifié - livreurs occupés depuis longtemps)
-        inactive_deliverers = Livreur.objects.filter(statut='occupé')
-        for livreur in inactive_deliverers[:1]:  # Limiter à 1 alerte
-            alerts.append({
-                'id': f'livreur_{livreur.id}',
-                'type': 'error',
-                'message': f'Livreur {livreur.user.username} non connecté depuis longtemps',
-                'time': 'Il y a quelques minutes'
-            })
-
-        # Rupture d'ingrédients (simplifié - produits avec quantité faible)
-        low_stock_products = Produit.objects.filter(quantite__lt=10)
-        if low_stock_products.exists():
-            alerts.append({
-                'id': 'low_stock',
-                'type': 'warning',
-                'message': 'Rupture d\'ingrédients signalée',
-                'time': 'Il y a quelques minutes'
-            })
-
-        # Performance des restaurants
-        restaurants = Restaurant.objects.all()
-        restaurant_performance = []
-        for restaurant in restaurants[:4]:  # Limiter à 4
-            # Temps moyen (simplifié)
-            avg_time = 25  # Valeur par défaut
-            rating = restaurant.rate or 4.0
-            status = 'success' if avg_time <= 25 else 'warning' if avg_time <= 35 else 'error'
-
-            restaurant_performance.append({
-                'name': restaurant.user.username,
-                'status': status,
-                'avgTime': f'{avg_time} min',
-                'rating': rating
-            })
-
-        # Performance des livreurs
-        livreurs = Livreur.objects.all()
-        delivery_performance = []
-        for livreur in livreurs[:4]:  # Limiter à 4
-            deliveries_count = Livraison.objects.filter(livreur=livreur).count()
-            # On-time rate simplifié
-            on_time_rate = 85  # Valeur par défaut
-            status = 'success' if on_time_rate >= 90 else 'warning' if on_time_rate >= 75 else 'error'
-
-            delivery_performance.append({
-                'name': f'{livreur.user.first_name} {livreur.user.last_name}',
-                'deliveries': deliveries_count,
-                'onTime': f'{on_time_rate}%',
-                'status': status
-            })
-
-        # Chart data
-        # Orders by month
-        orders_by_month = CommandeRestaurant.objects.values('mois', 'annee').annotate(count=Count('id')).order_by('annee', 'mois')
-        orderData = [{'month': f"{item['mois']}/{item['annee']}", 'commandes': item['count'], 'paiements': item['count']} for item in orders_by_month]
-
-        # Restaurants distribution
-        restaurants_orders = Restaurant.objects.annotate(orders_count=Count('menu_hebdo__menus__menu_plat__command_plat__commande', distinct=True))
-        restaurantData = [{'name': r.user.username, 'value': r.orders_count} for r in restaurants_orders]
-
-        # Boutiques distribution
-        boutiques_orders = Boutique.objects.annotate(orders_count=Count('rayons__produits__command_produit__commande', distinct=True))
-        boutiqueData = [{'name': b.user.username, 'value': b.orders_count} for b in boutiques_orders]
-
-        # Delivery performance
-        livreurs_revenue = Livreur.objects.annotate(total_montant=Sum('livraison__commande__prix_total'))
-        deliveryData = [{'name': l.user.username, 'montant': l.total_montant or 0} for l in livreurs_revenue]
-
-        return Response({
-            'kpiData': {
-                'orders_today': orders_today.count(),
-                'pending_orders_over_1h': pending_orders_over_1h.count(),
-                'avg_prep_time': avg_prep_time_display,
-                'on_time_delivery_rate': f"{on_time_delivery_rate:.0f}%"
-            },
-            'alerts': alerts,
-            'financial': {
-                'revenue_today': revenue_today,
-                'commissions': commissions,
-                'avg_basket': avg_basket
-            },
-            'restaurant_performance': restaurant_performance,
-            'delivery_performance': delivery_performance,
-            'chartData': {
-                'orderData': orderData,
-                'restaurantData': restaurantData,
-                'boutiqueData': boutiqueData,
-                'deliveryData': deliveryData,
-            }
-        })
-
+class PositionViewSet(viewsets.ModelViewSet):
+    queryset = Position.objects.all()
+    serializer_class = PositionSerializer
 
 class CommadePlatViewSet(viewsets.ModelViewSet):
     queryset = Commande_Plat.objects.all()
     serializer_class = CommandePlatSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['commande_id']
+    def create(self, request, *args, **kwargs):
+        plat_id=request.data.get("plat")
+        try:
+            plat=Restaurant_Plat.objects.get(id=plat_id)
+        except Restaurant_Plat.DoesNotExist:
+            raise ValidationError( "plat introuvable")
+        if not plat.is_avialable:
+            raise PermissionDenied(f"Le plat {plat.nom} n'est pas disponible pour le moment.")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CommadeProduitViewSet(viewsets.ModelViewSet):
+    queryset = Commande_Produit.objects.all()
+    serializer_class = CommandeProduitSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['commande_id']
 class CommandeRestaurantViewSet(viewsets.ModelViewSet):
@@ -189,27 +65,45 @@ class CommandeRestaurantViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         commande=self.get_object()
         if commande.statut!="attente":
-            return Response({"detail":"Impossible de supprimer cette commande car elle a déjà été validé"},status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError("Impossible de supprimer cette commande car elle a déjà été validé")
         else:
             return super().destroy(request, *args, **kwargs)
 
+    def create(self, request, *args, **kwargs):
+
+        restaurant_id=request.data.get("restaurant")
+        try:
+            restaurant=Restaurant.objects.get(id=restaurant_id)
+        except Restaurant.DoesNotExist:
+            raise ValidationError("Restaurant introuvable")
+
+        if not restaurant.est_ouvert:
+            raise NotAcceptable( "Le restaurant est actuellement fermé")
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data,status=status.HTTP_201_CREATED)
+
 class CommandeBoutiqueViewSet(viewsets.ModelViewSet):
-    queryset = CommandeRestaurant.objects.all()
-    serializer_class = CommandeSerializer
+    queryset = CommandeBoutique.objects.all()
+    serializer_class = CommandeBoutiqueSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    search_fields = ["commande_plat_set__produit__rayon__boutique","commande_plat_set__produit","client__username"]
     filterset_fields = ['statut','jour','mois','annee']
     def destroy(self, request, *args, **kwargs):
         commande=self.get_object()
         if commande.statut!="attente":
-            return Response({"detail":"Impossible de supprimer cette commande car elle a déjà été validé"},status=status.HTTP_400_BAD_REQUEST)
+            raise NotAcceptable("Impossible de supprimer cette commande car elle a déjà été validé")
         else:
             return super().destroy(request, *args, **kwargs)
 
 
 class LivraisonViewSet(viewsets.ModelViewSet):
     queryset = Livraison.objects.all()
-    serializer_class = LivraisonSerializer
+    serializer_class = LivraisonRestauSerializer
+class LivraisonBoutiqueViewSet(viewsets.ModelViewSet):
+    queryset = LivraisonBoutique.objects.all()
+    serializer_class = LivraisonBoutiqueSerializer
 
 class RateCommande(APIView):
     def post(self,request):
@@ -313,6 +207,139 @@ class ClientCommande(APIView):
         ]
 
         return Response(data, status=status.HTTP_200_OK)
+
+class LivreurLivraisonsView(APIView):
+    def get(self, request, livreur_id):
+        etat = request.query_params.get('statut', None)
+
+        livreur=get_object_or_404(Livreur,pk=livreur_id)
+        if livreur.est_a_personne:
+            livraisons_restau = Livraison.objects.filter(livreur_id__isnull=True)
+            livraisons_boutique = LivraisonBoutique.objects.filter(livreur_id__isnull=True)
+        else:
+            livraisons_restau = Livraison.objects.filter(livreur_id=livreur_id)
+            livraisons_boutique = LivraisonBoutique.objects.filter(livreur_id=livreur_id)
+
+        if etat:
+            livraisons_restau = livraisons_restau.filter(statut__iexact=etat)
+            livraisons_boutique = livraisons_boutique.filter(statut__iexact=etat)
+
+        data_restau = LivraisonRestauSerializer(livraisons_restau, many=True).data
+        data_boutique = LivraisonBoutiqueSerializer(livraisons_boutique, many=True).data
+        combined = sorted(data_restau + data_boutique, key=lambda x: x['commande']["id"], reverse=True)
+
+        return Response(combined, status=status.HTTP_200_OK)
+class RestaurantLivraisonsView(APIView):
+    def get(self, request, restaurant_id):
+        etat = request.query_params.get('statut', None)
+        livraisons_restau = Livraison.objects.filter(commande__restaurant=restaurant_id).distinct()
+        data_restau = LivraisonRestauSerializer(livraisons_restau, many=True).data
+        combined = sorted(data_restau, key=lambda x: x['statut'], reverse=True)
+
+        return Response(combined, status=status.HTTP_200_OK)
+class BoutiqueLivraisonsView(APIView):
+    def get(self, request, boutique_id):
+        etat = request.query_params.get('statut', None)
+        livraisons_restau = LivraisonBoutique.objects.filter(commande__boutique=boutique_id).distinct()
+        data_restau = LivraisonBoutiqueSerializer(livraisons_restau, many=True).data
+        combined = sorted(data_restau, key=lambda x: x['statut'])
+
+        return Response(combined, status=status.HTTP_200_OK)
+
+class RestaurantAnalyseAPIView(APIView):
+    def get(self,request,restaurant_id):
+        today=date.today()
+        commandes=CommandeRestaurant.objects.filter(restaurant=restaurant_id,heure_de_commande__date=today,statut="Réçu")
+        data={"total_montant":commandes.aggregate(total=Sum("prix_total"))["total"] or 0,"total_vente":commandes.aggregate(count=Count('id'))["count"] or 0,}
+        return Response(data,status=status.HTTP_200_OK)
+class BoutiqueAnalyseAPIView(APIView):
+    def get(self,request,boutique_id):
+        today=date.today()
+        commandes=CommandeBoutique.objects.filter(boutique=boutique_id,heure_de_commande__date=today,statut="Réçu")
+        data={"total_montant":commandes.aggregate(total=Sum("prix_total"))["total"] or 0,"total_vente":commandes.aggregate(count=Count('id'))["count"] or 0,}
+        return Response(data,status=status.HTTP_200_OK)
+
+class RestaurantOrderHistoryAPIView(APIView):
+    """
+    Returns orders grouped by date:
+    {
+        "2025-11-09": [...],
+        "2025-11-08": [...],
+        ...
+    }
+    """
+
+    def get(self, request, restaurant_id):
+        # Filter by restaurant
+        #queryset = CommandeRestaurant.objects.filter(restaurant=restaurant_id,statut="Réçu")
+        queryset = CommandeRestaurant.objects.filter(restaurant=restaurant_id)
+
+        # Optional: filter by start and end dates
+        start_date = request.query_params.get("start")
+        end_date = request.query_params.get("end")
+
+        if start_date:
+            queryset = queryset.filter(heure_de_commande__date__gte=parse_date(start_date))
+        if end_date:
+            queryset = queryset.filter(heure_de_commande__date__lte=parse_date(end_date))
+
+        # Group by date
+        queryset = queryset.annotate(date=TruncDate("heure_de_commande")).order_by("-date")
+
+        # Serializer
+        serializer = CommandeSerializer(queryset, many=True)
+
+        # Build grouped response
+        grouped = {}
+        for order in serializer.data:
+            order_date = order["heure_de_commande"][:10]  # "YYYY-MM-DD"
+            if order_date not in grouped:
+                grouped[order_date] = []
+            grouped[order_date].append(order)
+
+        return Response(grouped, status=status.HTTP_200_OK)
+
+
+class BoutiqueOrderHistoryAPIView(APIView):
+    """
+    Returns orders grouped by date:
+    {
+        "2025-11-09": [...],
+        "2025-11-08": [...],
+        ...
+    }
+    """
+
+    def get(self, request, boutique_id):
+        # Filter by restaurant
+        #queryset = CommandeRestaurant.objects.filter(restaurant=restaurant_id,statut="Réçu")
+        queryset = CommandeBoutique.objects.filter(boutique=boutique_id)
+
+        # Optional: filter by start and end dates
+        start_date = request.query_params.get("start")
+        end_date = request.query_params.get("end")
+
+        if start_date:
+            queryset = queryset.filter(heure_de_commande__date__gte=parse_date(start_date))
+        if end_date:
+            queryset = queryset.filter(heure_de_commande__date__lte=parse_date(end_date))
+
+        # Group by date
+        queryset = queryset.annotate(date=TruncDate("heure_de_commande")).order_by("-date")
+
+        # Serializer
+        serializer = CommandeBoutiqueSerializer(queryset, many=True)
+
+        # Build grouped response
+        grouped = {}
+        for order in serializer.data:
+            order_date = order["heure_de_commande"][:10]  # "YYYY-MM-DD"
+            if order_date not in grouped:
+                grouped[order_date] = []
+            grouped[order_date].append(order)
+
+        return Response(grouped, status=status.HTTP_200_OK)
+
 """
 class RestaurantCommande(APIView):
     def post(self, request, restaurant_id):
@@ -335,3 +362,47 @@ class RestaurantCommande(APIView):
 
         return Response(data, status=status.HTTP_200_OK)
 """
+
+# dans views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.utils import timezone
+from .models import Livraison
+from notifications.models import Notification
+from services.supabase_service import supabase
+
+class SignalerClientAPIView(APIView):
+    def post(self, request, livraison_id):
+        try:
+            livreur = request.user.livreur
+            livraison = Livraison.objects.get(id=livraison_id)
+
+            # Crée une notification dans la base Django
+            notification = Notification.objects.create(
+                type="signalement de commande ",
+                message=f"Le livreur de la commande{livraison.commande.id}, vous signale de venir la recupérer",
+                cible=livraison.commande.client.user.id
+            )
+
+            # Envoie la notification dans Supabase (Realtime)
+            data = {
+                "type": notification.type,
+                "message": notification.message,
+                "cible": notification.cible,
+                "timestamp": timezone.now().isoformat(),
+            }
+
+            response = supabase.table("notifications").insert(data).execute()
+
+            return Response({
+                "success": True,
+                "message": "Signal envoyé",
+                "supabase_response": response.data
+            }, status=status.HTTP_200_OK)
+
+        except Livraison.DoesNotExist:
+            return Response({"error": "Livraison introuvable"}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
