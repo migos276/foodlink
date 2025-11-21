@@ -7,34 +7,30 @@ For more information on this file, see
 https://docs.djangoproject.com/en/5.1/topics/settings/
 
 For the full list of settings and their values, see
-https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
 from decouple import config
 from pathlib import Path
-from datetime import timedelta
-import cloudinary_storage
-import cloudinary
-import cloudinary.uploader
 import cloudinary.api
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-)w-eva^2jmzscs_1zn$_trulk-8ous9^s(6-khtc8b10eae-$0')
+SECRET_KEY = 'django-insecure-)w-eva^2jmzscs_1zn$_trulk-8ous9^s(6-khtc8b10eae-$0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'foodlink237.org,www.foodlink237.org,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = []
 
+load_dotenv()
 # Application definition
 
 INSTALLED_APPS = [
@@ -44,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',  # Ajouté pour gérer CORS
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
@@ -55,7 +50,10 @@ INSTALLED_APPS = [
     'payement',
     "shop",
     'cloudinary',
-    'cloudinary_storage'
+    'cloudinary_storage',
+    "notifications",
+    'django_crontab',
+    "django_q",
 ]
 
 cloudinary.config(
@@ -70,28 +68,22 @@ CLOUDINARY_STORAGE={
     "API_SECRET": config("api_secret"),
 }
 
+
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 AUTH_USER_MODEL='users.CustomUser'
-
-REST_FRAMEWORK={
-    'DEFAULT_FILTER_BACKENDS':[
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.OrderingFilter',
-        'rest_framework.filters.SearchFilter',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES':[
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication'
-    ]
-}
-
 AUTHENTICATION_BACKENDS = [
-    'users.backends.CustomUserBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+
+
+REST_FRAMEWORK={
+    'DEFAULT_FILTER_BACKENDS':['django_filters.rest_framework.DjangoFilterBackend','django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',],
+    'DEFAULT_AUTHENTICATION_CLASSES':['rest_framework.authentication.TokenAuthentication','rest_framework_simplejwt.authentication.JWTAuthentication']
+}
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Doit être en premier
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -121,7 +113,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-# JWT Configuration
+from datetime import timedelta
+
 SIMPLE_JWT={
     'ACCESS_TOKEN_LIFETIME':timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
@@ -134,26 +127,29 @@ SIMPLE_JWT={
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'camer_eat'),
-        'USER': os.getenv('DB_USER', 'miguel'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', 'db'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'camer_eat',
+        'USER':'root',
+        'PASSWORD':'',
+        'HOST':'localhost',
+        'PORT':'3306',
     },
     'supabase': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': "postgres",
+        'NAME': "postgres" ,
         'USER': "postgres",
         'PASSWORD': os.getenv("SUPABASE_DB_PASSWORD"),
-        'HOST': os.getenv("SUPABASE_DB_HOST"),
+        'HOST': os.getenv("db.<SUPABASE_DB_PROJECT>.supabase.co"),
         'PORT': "5432",
     }
 }
 
+import os
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAP_API_KEY")
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -172,6 +168,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -183,36 +180,13 @@ USE_I18N = True
 
 USE_TZ = True
 
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Configuration CORS
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,https://foodlink237.org,https://www.foodlink237.org').split(',')
-
-# Allow all origins for development (be careful in production)
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False').lower() == 'true'
-
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-# Si vous avez des problèmes CSRF avec l'API
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,https://foodlink237.org,https://www.foodlink237.org').split(',')
