@@ -370,7 +370,7 @@ from rest_framework import status
 from django.utils import timezone
 from .models import Livraison
 from notifications.models import Notification
-from services.supabase_service import supabase
+# Removed supabase import and usage
 
 class SignalerClientAPIView(APIView):
     def post(self, request, livraison_id):
@@ -381,24 +381,15 @@ class SignalerClientAPIView(APIView):
             # Crée une notification dans la base Django
             notification = Notification.objects.create(
                 type="signalement de commande ",
-                message=f"Le livreur de la commande{livraison.commande.id}, vous signale de venir la recupérer",
+                message=f"Le livreur de la commande {livraison.commande.id}, vous signale de venir la recupérer",
                 cible=livraison.commande.client.user.id
             )
 
-            # Envoie la notification dans Supabase (Realtime)
-            data = {
-                "type": notification.type,
-                "message": notification.message,
-                "cible": notification.cible,
-                "timestamp": timezone.now().isoformat(),
-            }
-
-            response = supabase.table("notifications").insert(data).execute()
+            # Removed Supabase notification sending
 
             return Response({
                 "success": True,
-                "message": "Signal envoyé",
-                "supabase_response": response.data
+                "message": "Signal envoyé"
             }, status=status.HTTP_200_OK)
 
         except Livraison.DoesNotExist:

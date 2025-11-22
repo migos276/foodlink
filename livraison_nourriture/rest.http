@@ -1,0 +1,178 @@
+### Token Obtain (Login)
+POST /token/
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "yourpassword"
+}
+
+### Token Refresh
+POST /token/refresh/
+Content-Type: application/json
+
+{
+  "refresh": "your_refresh_token_here"
+}
+
+### Logout (Blacklist Refresh Token)
+POST /logout/
+Authorization: Bearer {{access_token}}
+
+{
+  "refresh_token": "your_refresh_token_here"
+}
+
+### User: List Users
+GET /utilisateur/
+Authorization: Bearer {{access_token}}
+
+### User: Get User Detail (replace :id)
+GET /utilisateur/:id/
+Authorization: Bearer {{access_token}}
+
+### User: Create User
+POST /utilisateur/
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "tel": 1234567890,
+  "profile": "client",
+  "password": "newuserpassword",
+  "code": "",
+  "a_restaurant": false,
+  "a_boutique": false,
+  "quartier": "Quartier Example"
+}
+
+### User: Create Entreprise (custom action)
+POST /utilisateur/new_entreprise/
+Content-Type: application/json
+
+{
+  "username": "restau1",
+  "email": "restau1@example.com",
+  "tel": 987654321,
+  "password": "restaupassword",
+  "code": ""
+}
+
+### User: Create Livreur (custom action)
+POST /utilisateur/new_livreur/
+Content-Type: application/json
+
+{
+  "username": "livreur1",
+  "email": "livreur1@example.com",
+  "tel": 123123123,
+  "password": "livreurpassword",
+  "code": "",
+  "entreprise": null,
+  "matricule": "MAT123456",
+  "description": "Description for livreur1"
+}
+
+### Restaurant: List
+GET /restaurant/
+Authorization: Bearer {{access_token}}
+
+### Restaurant: Create Restaurant
+POST /restaurant/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "type_plat": "French",
+  "horaire_id": 1,
+  "user_id": 1
+}
+
+### Restaurant: Detail (replace :id)
+GET /restaurant/:id/
+Authorization: Bearer {{access_token}}
+
+### Boutique: List
+GET /boutique/
+Authorization: Bearer {{access_token}}
+
+### Boutique: Create Boutique
+POST /boutique/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "couleur": "#ff0000",
+  "user_id": 2,
+  "horaire_id": 1,
+  "type": "supermarché"
+}
+
+### Boutique: Detail (replace :id)
+GET /boutique/:id/
+Authorization: Bearer {{access_token}}
+
+### Livreur: List
+GET /livreur/
+Authorization: Bearer {{access_token}}
+
+### Livreur: Create Livreur
+POST /livreur/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "entreprise": null,
+  "matricule": "MAT789012",
+  "description": "Livreur example",
+  "est_a_personne": true,
+  "statut": "libre"
+}
+
+### Livreur: Detail (replace :id)
+GET /livreur/:id/
+Authorization: Bearer {{access_token}}
+
+### Horaire Hebdomadaire: List
+GET /horaire_hebdomadaire/
+Authorization: Bearer {{access_token}}
+
+### Horaire Hebdomadaire: Create
+POST /horaire_hebdomadaire/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{}
+
+### Horaire Hebdomadaire: Detail (replace :id)
+GET /horaire_hebdomadaire/:id/
+Authorization: Bearer {{access_token}}
+
+### Horaire: List
+GET /horaire/
+Authorization: Bearer {{access_token}}
+
+### Horaire: Create
+POST /horaire/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "ouverture": "08:00:00",
+  "fermeture": "18:00:00",
+  "jour": "lundi",
+  "horaire_hebdo": 1
+}
+
+### Horaire: Detail (replace :id)
+GET /horaire/:id/
+Authorization: Bearer {{access_token}}
+
+### Types Plats List
+GET /types-plats/
+Authorization: Bearer {{access_token}}
+
+### Types Boutiques List
+GET /types-boutiques/
+Authorization: Bearer {{access_token}}

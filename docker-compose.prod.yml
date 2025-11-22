@@ -1,15 +1,17 @@
 services:
   db:
-    image: postgres:latest
+    image: mysql:8
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT}:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - mysql_data:/var/lib/mysql
+
 
   django:
     build:
@@ -37,4 +39,4 @@ services:
       - django
 
 volumes:
-  postgres_data:
+  mysql_data:

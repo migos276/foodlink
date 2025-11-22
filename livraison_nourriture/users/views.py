@@ -95,23 +95,7 @@ class LivreurViewset(viewsets.ModelViewSet):
 
 
 from rest_framework.decorators import api_view, action
-from services.supabase_service import sync_table
 
-@api_view(["POST"])
-def update_position(request):
-    order_id = request.data.get("order_id")
-    livreur_id = request.data.get("livreur_id")
-    lat = request.data.get("latitude")
-    lng = request.data.get("longitude")
-
-    sync_table("delivery_positions", {
-        "order_id": str(order_id),
-        "livreur_id": livreur_id,
-        "latitude": lat,
-        "longitude": lng,
-    })
-
-    return Response({"status": "ok"})
 class CreateEntrepriseView(APIView):
     def get(self, request):
         # Pour afficher les champs dans l'interface DRF

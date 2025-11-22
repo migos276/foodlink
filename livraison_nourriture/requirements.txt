@@ -11,3 +11,7 @@ python-dotenv==1.0.1
 requests==2.32.3
 supabase==2.10.0
 django-cloudinary-storage==0.3.0
+django-crontab
+django-q2
+setuptools
+mysqlclient

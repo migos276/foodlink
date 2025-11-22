@@ -56,6 +56,15 @@ INSTALLED_APPS = [
     "django_q",
 ]
 
+Q_CLUSTER = {
+    'name': 'DjangORM',
+    'workers': 4,
+    'timeout': 90,
+    'retry': 120,  # Doit être supérieur au timeout
+    'queue_limit': 50,
+    'orm': 'default',
+}
+
 cloudinary.config(
     cloud_name=config("cloud_name"),
     api_key=config("api_key"),
@@ -128,25 +137,15 @@ SIMPLE_JWT={
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'camer_eat',
-        'USER':'root',
-        'PASSWORD':'',
-        'HOST':'localhost',
-        'PORT':'3306',
-    },
-    'supabase': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': "postgres" ,
-        'USER': "postgres",
-        'PASSWORD': os.getenv("SUPABASE_DB_PASSWORD"),
-        'HOST': os.getenv("db.<SUPABASE_DB_PROJECT>.supabase.co"),
-        'PORT': "5432",
+        'NAME': 'camereatdb',
+        'USER': 'miguel',
+        'PASSWORD': 'miguel123',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
 import os
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAP_API_KEY")
