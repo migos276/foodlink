@@ -137,11 +137,11 @@ SIMPLE_JWT={
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'camereatdb',
-        'USER': 'miguel',
-        'PASSWORD': 'miguel123',
-        'HOST': 'db',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'camereatdb'),
+        'USER': os.environ.get('DB_USER', 'miguel'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'miguel123'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
