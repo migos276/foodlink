@@ -140,7 +140,7 @@ DATABASES = {
         'NAME': 'camereatdb',
         'USER': 'miguel',
         'PASSWORD': 'miguel123',
-        'HOST': 'localhost',
+        'HOST': 'db',
         'PORT': '3306',
     }
 }
