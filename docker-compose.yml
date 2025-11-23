@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.django
-    command: python livraison_nourriture/manage.py runserver 0.0.0.0:8000
+    command: ./wait-for-db.sh python livraison_nourriture/manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
