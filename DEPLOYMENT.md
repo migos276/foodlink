@@ -1,201 +1,169 @@
-# Guide de Déploiement Camer-Eat
+# Deployment Instructions for Camer-Eat Project (Without Docker)
 
-## Prérequis
+This guide explains how to deploy the Camer-Eat project manually without Docker, including setup for Django backend, Next.js frontend, and nginx configuration.
 
-- Docker et Docker Compose installés sur le VPS Hostinger
-- Nginx installé sur le serveur
-- Domaine configuré (foodlink237.org)
-- Certificats SSL (Let's Encrypt recommandé)
+---
 
-## Configuration pour la Production
+## 1. Prepare the Server
 
-### 1. Variables d'environnement
+- Make sure you have the following installed on the server:
+  - Python 3.10+ (or compatible version)
+  - Node.js 18+ and npm or pnpm
+  - MySQL Server (or access to the MySQL database)
+  - nginx
+  - virtualenv
 
-Copiez le fichier `.env.example` vers `.env` et configurez les valeurs :
+---
+
+## 2. Django Backend Setup
+
+1. **Navigate to the backend directory:**
 
 ```bash
-cp .env.example .env
+cd /home/migos/Bureau/GTchemou/camereatmain/livraison_nourriture
 ```
 
-Éditez `.env` avec vos valeurs de production :
-- Changez `SECRET_KEY` pour une clé sécurisée
-- Définissez `DEBUG=False`
-- Configurez `ALLOWED_HOSTS` avec votre domaine
-- Définissez un mot de passe sécurisé pour PostgreSQL
-
-### 2. Configuration Nginx pour Hostinger
-
-Sur votre VPS Hostinger, copiez la configuration Nginx :
+2. **Create a Python virtual environment and activate it:**
 
 ```bash
-# Copier la configuration
-sudo cp nginx.conf /etc/nginx/sites-available/foodlink237
+python3 -m venv venv
+source venv/bin/activate
+```
 
-# Créer un lien symbolique vers sites-enabled
-sudo ln -s /etc/nginx/sites-available/foodlink237 /etc/nginx/sites-enabled/
+3. **Install Python dependencies:**
 
-# Supprimer la configuration par défaut
-sudo rm /etc/nginx/sites-enabled/default
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-# Tester la configuration
+4. **Set environment variables (adapt as needed):**
+
+```bash
+export DJANGO_SETTINGS_MODULE=backend.settings
+export DB_NAME=your_db_name
+export DB_USER=your_db_user
+export DB_PASSWORD=your_db_password
+export DB_HOST=your_db_host
+export DB_PORT=3306
+```
+
+5. **Apply database migrations:**
+
+```bash
+python manage.py migrate
+```
+
+6. **Collect static files:**
+
+```bash
+python manage.py collectstatic --noinput
+```
+
+7. **Create a superuser (if needed):**
+
+```bash
+python manage.py createsuperuser
+```
+
+8. **Run Gunicorn to serve the Django app:**
+
+```bash
+gunicorn backend.wsgi:application --bind 127.0.0.1:8000 --workers 4 --threads 2
+```
+
+You may want to run this command inside a process manager like `systemd` or `supervisor` for production.
+
+---
+
+## 3. Next.js Frontend Setup
+
+1. **Navigate to the project root directory:**
+
+```bash
+cd /home/migos/Bureau/GTchemou/camereatmain
+```
+
+2. **Install Node.js dependencies:**
+
+```bash
+npm install
+```
+
+Alternatively use `pnpm install` if you use pnpm.
+
+3. **Build the Next.js app:**
+
+```bash
+npm run build
+```
+
+4. **Start the Next.js server:**
+
+```bash
+npm start
+```
+
+By default, this runs the Next.js app on port 3000.
+
+---
+
+## 4. Nginx Configuration
+
+- Replace the existing nginx configuration with the provided `nginx.conf` file configured to:
+
+  - Proxy `/` to Next.js on `localhost:3000`
+  - Proxy `/api` to Django backend on `localhost:8000`
+  - Serve Django static files from `/home/migos/Bureau/GTchemou/camereatmain/livraison_nourriture/staticfiles/`
+
+- Place the `nginx.conf` file in `/etc/nginx/sites-available/camer-eat` (or appropriate location).
+
+- Enable the site:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/camer-eat /etc/nginx/sites-enabled/
+```
+
+- Test nginx configuration:
+
+```bash
 sudo nginx -t
+```
 
-# Redémarrer Nginx
+- Reload nginx:
+
+```bash
 sudo systemctl reload nginx
 ```
 
-### 3. Déploiement avec Docker
+---
 
-#### Pour le développement :
-```bash
-docker-compose up --build
-```
+## 5. Firewall Configuration (optional but recommended)
 
-#### Pour la production sur Hostinger :
-```bash
-# Construire et démarrer les services
-docker compose -f docker-compose.prod.yml up --build -d
-
-# Vérifier que les conteneurs tournent
-docker-compose -f docker-compose.prod.yml ps
-```
-
-### 4. Migration de la base de données
-
-Si vous migrez depuis SQLite vers PostgreSQL :
+Allow HTTP (80) and HTTPS (443):
 
 ```bash
-# Arrêter les conteneurs
-docker-compose down
-
-# Sauvegarder les données SQLite (si nécessaire)
-# Créer un dump des données
-
-# Démarrer avec PostgreSQL
-docker compose -f docker-compose.prod.yml up --build -d
-
-# Appliquer les migrations
-docker-compose -f docker-compose.prod.yml exec django python manage.py migrate
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw reload
 ```
 
-### 5. Collecte des fichiers statiques
+---
 
-```bash
-docker-compose -f docker-compose.prod.yml exec django python manage.py collectstatic --noinput
-```
+## 6. Running the Application
 
-## Vérification du Déploiement
+- Make sure Gunicorn and Next.js are running in the background or managed by a process manager.
+- Nginx will handle SSL termination and proxy requests to your backend and frontend.
 
-### 1. Vérifier que les conteneurs tournent :
-```bash
-docker-compose ps
-```
+---
 
-### 2. Vérifier les logs :
-```bash
-docker-compose logs django
-docker-compose logs nextjs
-docker-compose logs db
-```
+## Notes
 
-### 3. Tester l'API :
-```bash
-curl http://your-domain.com/api/
-```
+- Media files are hosted on Cloudinary, so no need to serve media files via nginx.
+- Adjust environment variables according to your production database and secrets.
+- Consider using `pm2` or `systemd` for managing the Next.js server.
+- For production, set `DEBUG = False` in Django settings and add your domain to `ALLOWED_HOSTS`.
 
-### 4. Tester le frontend :
-Accédez à `http://your-domain.com` dans votre navigateur.
+---
 
-## Maintenance
-
-### Sauvegarde de la base de données :
-```bash
-docker-compose exec db pg_dump -U postgres camer_eat > backup.sql
-```
-
-### Mise à jour de l'application :
-```bash
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up --build -d
-```
-
-### Monitoring :
-- Surveillez les logs Apache : `/var/log/apache2/`
-- Surveillez les logs Docker : `docker-compose logs`
-
-## Sécurité
-
-- Changez les mots de passe par défaut
-- Utilisez HTTPS en production (SSL configuré dans nginx.conf)
-- Configurez un firewall (ufw sur Ubuntu)
-- Mettez à jour régulièrement les images Docker
-- Utilisez des secrets pour les variables sensibles
-- Installez Let's Encrypt pour les certificats SSL gratuits
-
-## Configuration SSL avec Let's Encrypt (Hostinger)
-
-```bash
-# Installer Certbot pour Nginx
-sudo apt install certbot python3-certbot-nginx
-
-# Obtenir le certificat
-sudo certbot --nginx -d foodlink237.org -d www.foodlink237.org
-
-# Le certificat sera automatiquement configuré dans Nginx
-# Les chemins dans nginx.conf seront mis à jour automatiquement
-```
-
-## Commandes de déploiement finales pour Hostinger (Nginx)
-
-```bash
-# 1. Cloner le projet
-git clone <your-repo-url>
-cd camer-eat-main
-
-# 2. Créer le fichier .env avec vos variables de production
-cp .env.example .env
-# Éditez .env avec vos vraies valeurs
-
-# 3. Construire et démarrer les services Docker
-docker compose -f docker-compose.prod.yml up --build -d
-
-# 4. Vérifier que les conteneurs tournent
-docker-compose -f docker-compose.prod.yml ps
-
-# 5. Configurer Nginx
-sudo cp nginx.conf /etc/nginx/sites-available/foodlink237
-sudo ln -s /etc/nginx/sites-available/foodlink237 /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl reload nginx
-
-# 6. Configurer SSL avec Let's Encrypt
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d foodlink237.org -d www.foodlink237.org
-
-# 7. Vérifier le déploiement
-curl https://foodlink237.org
-curl https://foodlink237.org/api/
-
-# 8. Configurer le firewall (optionnel mais recommandé)
-sudo ufw allow 'Nginx Full'
-sudo ufw --force enable
-```
-
-## Dépannage
-
-### Problème de connexion à la base de données :
-Vérifiez les variables d'environnement et que le conteneur PostgreSQL est démarré.
-
-### Erreur 502 Bad Gateway :
-Vérifiez que les services Django et Next.js sont accessibles sur leurs ports respectifs (3000 et 8000).
-
-### Erreur 504 Gateway Timeout :
-Augmentez les timeouts dans nginx.conf si nécessaire.
-
-### Problème de permissions :
-Assurez-vous que les volumes Docker ont les bonnes permissions.
-
-### SSL ne fonctionne pas :
-Vérifiez que les certificats Let's Encrypt ont été générés correctement avec `sudo certbot certificates`.
+This completes the manual deployment setup for the Camer-Eat project without Docker.
